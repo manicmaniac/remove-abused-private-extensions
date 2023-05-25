@@ -14,5 +14,11 @@ let package = Package(
                 .product(name: "SwiftSyntax", package: "swift-syntax"),
                 .product(name: "SwiftSyntaxParser", package: "swift-syntax"),
             ]),
+        .testTarget(
+            name: "remove-abused-private-extensions-tests",
+            dependencies: [
+                "remove-abused-private-extensions",
+            ]
+        )
     ]
 )
