@@ -5,6 +5,7 @@ import SwiftSyntax
  */
 final class PrivateExtensionMethodAccessModifierRewriter: SyntaxRewriter {
     private var isInPrivateExtension = false
+    private var classNames: [String] = []
 
     override func visitPre(_ node: Syntax) {
         if let modifiers = node.as(ExtensionDeclSyntax.self)?.modifiers,
@@ -17,6 +18,18 @@ final class PrivateExtensionMethodAccessModifierRewriter: SyntaxRewriter {
         if isInPrivateExtension && node.is(ExtensionDeclSyntax.self) {
             isInPrivateExtension = false
         }
+    }
+
+    override func visit(_ node: SourceFileSyntax) -> Syntax {
+        classNames = findAllClassNames(from: Syntax(node))
+        return super.visit(node)
+    }
+
+    override func visit(_ node: ExtensionDeclSyntax) -> DeclSyntax {
+        if let extendedType = node.extendedType.as(SimpleTypeIdentifierSyntax.self), classNames.contains(extendedType.name.text) {
+            return super.visit(node)
+        }
+        return DeclSyntax(node)
     }
 
     override func visit(_ node: FunctionDeclSyntax) -> DeclSyntax {
@@ -44,6 +57,13 @@ final class PrivateExtensionMethodAccessModifierRewriter: SyntaxRewriter {
         return DeclSyntax(node.insertModifier(DeclModifierSyntax { builder in
             builder.useName(SyntaxFactory.makePrivateKeyword(trailingTrivia: .spaces(1)))
         }))
+    }
+
+    private func findAllClassNames(from node: Syntax) -> [String] {
+        if let classDecl = node.as(ClassDeclSyntax.self) {
+            return [classDecl.identifier.text]
+        }
+        return node.children.flatMap(findAllClassNames(from:))
     }
 }
 

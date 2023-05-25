@@ -68,4 +68,25 @@ final class PrivateExtensionMethodAccessModifierRewriterTests: XCTestCase {
         let modified = String(describing: rewriter.visit(syntax))
         XCTAssertEqual(modified, expected)
     }
+
+    func test_visit_does_not_change_access_modifier_of_external_extensions() throws {
+        let original = """
+            class Foo {
+            }
+            private extension Bar {
+                var bar: Int { 0 }
+            }
+            """
+        let expected = """
+            class Foo {
+            }
+            private extension Bar {
+                var bar: Int { 0 }
+            }
+            """
+        let syntax = try SyntaxParser.parse(source: original)
+        let rewriter = PrivateExtensionMethodAccessModifierRewriter()
+        let modified = String(describing: rewriter.visit(syntax))
+        XCTAssertEqual(modified, expected)
+    }
 }
