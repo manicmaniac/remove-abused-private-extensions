@@ -30,6 +30,21 @@ final class PrivateExtensionMethodAccessModifierRewriter: SyntaxRewriter {
             builder.useName(SyntaxFactory.makePrivateKeyword(trailingTrivia: .spaces(1)))
         }))
     }
+
+    override func visit(_ node: VariableDeclSyntax) -> DeclSyntax {
+        if !isInPrivateExtension {
+            return DeclSyntax(node)
+        }
+        if node.parent?.is(MemberDeclListItemSyntax.self) != true {
+            return DeclSyntax(node)
+        }
+        if node.modifiers?.contains(where: { $0.name.tokenKind == .privateKeyword }) == true {
+            return DeclSyntax(node)
+        }
+        return DeclSyntax(node.insertModifier(DeclModifierSyntax { builder in
+            builder.useName(SyntaxFactory.makePrivateKeyword(trailingTrivia: .spaces(1)))
+        }))
+    }
 }
 
 private extension FunctionDeclSyntax {
@@ -39,7 +54,19 @@ private extension FunctionDeclSyntax {
                 .withFuncKeyword(funcKeyword.withLeadingTrivia(.zero))
         }
         return withModifiers(SyntaxFactory.makeModifierList([
-            // DeclModifierSyntax
+            element.withLeadingTrivia(firstModifier.leadingTrivia ?? element.leadingTrivia ?? .zero),
+            firstModifier.withLeadingTrivia(.zero)
+        ] + Array(modifiers.dropFirst())))
+    }
+}
+
+private extension VariableDeclSyntax {
+    func insertModifier(_ element: DeclModifierSyntax) -> VariableDeclSyntax {
+        guard let modifiers = modifiers, let firstModifier = modifiers.first else {
+            return addModifier(element.withLeadingTrivia(letOrVarKeyword.leadingTrivia ?? .zero))
+                .withLetOrVarKeyword(letOrVarKeyword.withLeadingTrivia(.zero))
+        }
+        return withModifiers(SyntaxFactory.makeModifierList([
             element.withLeadingTrivia(firstModifier.leadingTrivia ?? element.leadingTrivia ?? .zero),
             firstModifier.withLeadingTrivia(.zero)
         ] + Array(modifiers.dropFirst())))
